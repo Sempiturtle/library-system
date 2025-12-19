@@ -26,6 +26,12 @@ class User extends Authenticatable
         'gender',
     ];
 
+    public function borrows()
+    {
+        return $this->hasMany(Borrow::class);
+    }
+
+
     /**
      * The attributes that should be hidden for serialization.
      *

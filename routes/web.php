@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\StudentController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,7 +21,21 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
+// Student Dashboard
+Route::middleware(['auth'])->group(function () {
 
+    Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
+
+    Route::post('/borrow/{book}', [StudentController::class, 'borrow'])->name('student.borrow');
+
+    Route::post('/return/{borrow}', [StudentController::class, 'returnBook'])->name('student.return');
+});
+
+
+
+
+
+// Librarian / admin dashboard
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/admin_dashboard', [AdminController::class, 'showAdminDashboard'])->name('admin.dashboard');
     Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser'])
