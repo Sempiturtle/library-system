@@ -22,13 +22,8 @@ class Book extends Model
         'author',
         'copies',
     ];
-    public function user()
+    public function borrows()
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function book()
-    {
-        return $this->belongsTo(Book::class);
+        return $this->hasMany(Borrow::class);
     }
 }

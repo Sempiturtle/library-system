@@ -6,7 +6,7 @@
                 Welcome, {{ Auth::user()->name }}! 👋
             </h2>
             <p class="text-sm text-gray-600 mt-1 tracking-wide">
-                AISAT Library Management System — Student Dashboard
+                AISAT Library
             </p>
         </div>
     </x-slot>
