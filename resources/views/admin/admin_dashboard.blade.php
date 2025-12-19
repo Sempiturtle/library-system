@@ -1,11 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400">
-            Welcome, {{ Auth::user()->name }}! 👋
-        </h2>
-        <p class="text-sm text-gray-600 mt-1 tracking-wide">
-            AISAT Library Management System — Admin Dashboard
-        </p>
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400">
+                    Welcome, {{ Auth::user()->name }}! 👋
+                </h2>
+                <p class="text-sm text-gray-600 mt-1 tracking-wide">
+                    AISAT Library Management System — Admin Dashboard
+                </p>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition">
+                    Logout
+                </button>
+            </form>
+        </div>
     </x-slot>
 
     <div class="py-10 bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 min-h-screen">
@@ -50,11 +60,11 @@
                     </div>
                     <div class="p-6 bg-white/30 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 hover:scale-[1.03] transition-all cursor-pointer">
                         <p class="text-gray-600 text-sm">Books Borrowed</p>
-                        <h3 class="text-3xl font-bold text-purple-600">{{ $borrowedBooks ?? 0 }}</h3>
+                        <h3 class="text-3xl font-bold text-purple-600">{{ $totalBorrows ?? 0 }}</h3>
                     </div>
                     <div class="p-6 bg-white/30 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 hover:scale-[1.03] transition-all cursor-pointer">
                         <p class="text-gray-600 text-sm">Overdue Books</p>
-                        <h3 class="text-3xl font-bold text-pink-600">{{ $overdueBooks ?? 0 }}</h3>
+                        <h3 class="text-3xl font-bold text-pink-600">{{ $overdueBorrows ?? 0 }}</h3>
                     </div>
                 </div>
 
@@ -78,23 +88,27 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
-                                @foreach($books as $book)
-                                <tr class="hover:bg-pink-50 transition">
-                                    <td class="p-3 font-medium">{{ $book->title }}</td>
-                                    <td class="p-3">{{ $book->author }}</td>
-                                    <td class="p-3">{{ $book->copies }}</td>
-                                    <td class="p-3 flex gap-2">
-                                        <a href="{{ route('admin.books.edit', $book->id) }}" class="px-3 py-1 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 transition">
-                                            ✏️ Edit
-                                        </a>
-                                        <form action="{{ route('admin.books.destroy', $book->id) }}" method="POST" onsubmit="return confirm('Delete this book?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="px-3 py-1 rounded-xl bg-red-500 text-white hover:bg-red-600 transition">🗑 Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                @endforeach
+                                @forelse($books as $book)
+                                    <tr class="hover:bg-pink-50 transition">
+                                        <td class="p-3 font-medium">{{ $book->title }}</td>
+                                        <td class="p-3">{{ $book->author }}</td>
+                                        <td class="p-3">{{ $book->copies }}</td>
+                                        <td class="p-3 flex gap-2">
+                                            <a href="{{ route('admin.books.edit', $book->id) }}" class="px-3 py-1 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600 transition">
+                                                ✏️ Edit
+                                            </a>
+                                            <form action="{{ route('admin.books.destroy', $book->id) }}" method="POST" onsubmit="return confirm('Delete this book?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-3 py-1 rounded-xl bg-red-500 text-white hover:bg-red-600 transition">🗑 Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="p-3 text-center text-gray-500">No books found.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -116,25 +130,32 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
-                                @foreach($borrows as $borrow)
-                                <tr class="hover:bg-pink-50 transition">
-                                    <td class="p-3">{{ $borrow->user->name }}</td>
-                                    <td class="p-3">{{ $borrow->book->title }}</td>
-                                    <td class="p-3">{{ $borrow->borrow_date->format('M d, Y') }}</td>
-                                    <td class="p-3">{{ $borrow->due_date->format('M d, Y') }}</td>
-                                    <td class="p-3 font-semibold @if($borrow->status=='overdue') text-red-600 @elseif($borrow->status=='borrowed') text-purple-600 @else text-green-600 @endif">
-                                        {{ ucfirst($borrow->status) }}
-                                    </td>
-                                    <td class="p-3 flex gap-2">
-                                        @if($borrow->status != 'returned')
-                                        <form action="{{ route('admin.borrows.return', $borrow->id) }}" method="POST">
-                                            @csrf
-                                            <button class="px-3 py-1 rounded-xl bg-green-500 text-white hover:bg-green-600 transition">✅ Return</button>
-                                        </form>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
+                                @forelse($borrows as $borrow)
+                                    <tr class="hover:bg-pink-50 transition">
+                                        <td class="p-3">{{ $borrow->user->name }}</td>
+                                        <td class="p-3">{{ $borrow->book->title }}</td>
+                                        <td class="p-3">{{ \Carbon\Carbon::parse($borrow->borrow_date)->format('M d, Y') }}</td>
+                                        <td class="p-3">{{ \Carbon\Carbon::parse($borrow->due_date)->format('M d, Y') }}</td>
+                                        <td class="p-3 font-semibold
+                                            @if($borrow->return_date) text-green-600
+                                            @elseif($borrow->due_date < now()) text-red-600
+                                            @else text-purple-600 @endif">
+                                            {{ $borrow->return_date ? 'Returned' : ($borrow->due_date < now() ? 'Overdue' : 'Borrowed') }}
+                                        </td>
+                                        <td class="p-3 flex gap-2">
+                                            @if(!$borrow->return_date)
+                                                <form action="{{ route('admin.borrows.return', $borrow->id) }}" method="POST">
+                                                    @csrf
+                                                    <button class="px-3 py-1 rounded-xl bg-green-500 text-white hover:bg-green-600 transition">✅ Return</button>
+                                                </form>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="p-3 text-center text-gray-500">No borrow records found.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -142,7 +163,7 @@
 
                 <!-- Footer -->
                 <p class="mt-10 text-center text-gray-600 text-xs">
-                    © {{ date('Y') }} AISAT Library Management System — Designed with 💗✨ for Admins
+                    © {{ date('Y') }} AISAT Library Management System
                 </p>
 
             </div>

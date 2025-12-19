@@ -5,24 +5,31 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Book;
-use App\Models\Borrow;
 use App\Models\User;
+use App\Models\Borrow;
 
 class AdminController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth','admin']); // Only admin/librarian access
+        $this->middleware(['auth', 'admin']);
     }
 
     public function dashboard()
     {
-        // Quick stats
         $totalBooks = Book::count();
-        $totalUsers = User::where('usertype', 'user')->count();
-        $totalBorrows = Borrow::count();
-        $overdueBorrows = Borrow::where('due_date', '<', now())->whereNull('return_date')->count();
+        $borrowedBooks = Borrow::whereNull('return_date')->count();
+        $overdueBooks = Borrow::whereNull('return_date')->where('due_date', '<', now())->count();
 
-        return view('admin.admin_dashboard', compact('totalBooks', 'totalUsers', 'totalBorrows', 'overdueBorrows'));
+        $books = Book::all();
+        $borrows = Borrow::with(['user','book'])->get();
+
+        return view('admin.admin_dashboard', compact(
+            'totalBooks',
+            'borrowedBooks',
+            'overdueBooks',
+            'books',
+            'borrows'
+        ));
     }
 }

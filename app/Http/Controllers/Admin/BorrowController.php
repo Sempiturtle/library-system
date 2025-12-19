@@ -5,39 +5,36 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Borrow;
-use App\Models\Book;
-use App\Models\User;
 
 class BorrowController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth','admin']); // Only admin/librarian
+        $this->middleware(['auth','admin']);
     }
 
-    // List all borrows
     public function index()
     {
-        $borrows = Borrow::with(['user', 'book'])->get();
+        $borrows = Borrow::with(['user','book'])->get();
         return view('admin.borrows.index', compact('borrows'));
     }
 
-    // Mark book as returned
     public function returnBook(Borrow $borrow)
     {
-        $borrow->return_date = now();
-        $borrow->save();
+        if ($borrow->return_date) {
+            return redirect()->back()->with('error','Book already returned.');
+        }
 
-        // Increase book copies
+        $borrow->update(['return_date' => now()]);
+
         $borrow->book->increment('copies');
 
-        return redirect()->back()->with('success', 'Book marked as returned.');
+        return redirect()->back()->with('success','Book marked as returned.');
     }
 
-    // Optional: Delete borrow record
     public function destroy(Borrow $borrow)
     {
         $borrow->delete();
-        return redirect()->back()->with('success', 'Borrow record deleted.');
+        return redirect()->back()->with('success','Borrow record deleted.');
     }
 }

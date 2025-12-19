@@ -23,20 +23,27 @@ Route::middleware('auth')->group(function () {
 });
 
 // Student Dashboard & Actions
-Route::middleware(['auth'])->group(function () {
+Route::middleware('auth')->group(function() {
     Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
     Route::post('/borrow/{book}', [StudentController::class, 'borrow'])->name('student.borrow');
     Route::post('/return/{borrow}', [StudentController::class, 'returnBook'])->name('student.return');
 });
 
-// Admin / Librarian Dashboard & Book Management
 
-Route::middleware(['auth','admin'])->prefix('admin')->name('admin.')->group(function(){
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+Route::middleware(['auth','admin'])->prefix('admin')->name('admin.')->group(function() {
+    Route::get('/dashboard', [AdminController::class,'dashboard'])->name('dashboard');
 
-    // Books CRUD
+    // Books
     Route::resource('books', BookController::class);
 
-    // Borrow Records
-    Route::resource('borrows', BorrowController::class)->only(['index','show','update']);
+    // Borrows
+    Route::get('borrows', [BorrowController::class,'index'])->name('borrows.index');
+    Route::post('borrows/{borrow}/return', [BorrowController::class,'returnBook'])->name('borrows.return');
+    Route::delete('borrows/{borrow}', [BorrowController::class,'destroy'])->name('borrows.destroy');
+
+    // Logout
+    Route::post('logout', function() {
+        auth()->logout();
+        return redirect('/');
+    })->name('logout');
 });

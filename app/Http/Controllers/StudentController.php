@@ -3,104 +3,104 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Book;
 use App\Models\Borrow;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
-
 
 class StudentController extends Controller
 {
-    // BORROW LIMIT
-    private $limit = 5;
+    public function __construct()
+    {
+        $this->middleware('auth'); // Only logged-in users
+    }
 
+    // Dashboard
     public function dashboard()
     {
         $user = Auth::user();
 
-        // update overdue statuses automatically
-        Borrow::where('user_id', $user->id)
+        // Borrow limit (you can change this)
+        $borrowLimit = 5;
+
+        // Books currently borrowed by this student
+        $currentBorrows = Borrow::where('user_id', $user->id)
             ->whereNull('return_date')
-            ->where('due_date', '<', Carbon::now())
-            ->update(['status' => 'Overdue']);
+            ->with('book')
+            ->get();
 
-        // stats
-        $totalBorrowed = Borrow::where('user_id', $user->id)->count();
-        $overdueCount = Borrow::where('user_id', $user->id)->where('status', 'Overdue')->count();
+        $borrowedBooks = $currentBorrows->count();
 
-        // active borrows (still borrowed)
-        $activeBorrowCount = Borrow::where('user_id', $user->id)
-            ->whereNull('return_date')
-            ->count();
+        // Overdue count
+        $overdueCount = $currentBorrows->where('due_date', '<', now())->count();
 
-        // available books
-        $books = Book::orderBy('title', 'asc')->get();
+        // Available books
+        $books = Book::all();
 
-        // borrow history
+        // Borrow history (all borrows by this student)
         $history = Borrow::where('user_id', $user->id)
+            ->with('book')
             ->orderBy('borrow_date', 'desc')
             ->get();
 
-        return view('dashboard', [
-            'books' => $books,
-            'history' => $history,
-            'totalBorrowed' => $totalBorrowed,
-            'borrowLimit' => $this->limit,
-            'overdueCount' => $overdueCount,
-            'activeBorrowCount' => $activeBorrowCount
-        ]);
+        return view('dashboard', compact(
+            'books', 'history', 'borrowedBooks', 'borrowLimit', 'overdueCount'
+        ));
     }
 
-
-    // BORROW A BOOK
+    // Borrow a book
     public function borrow(Book $book)
     {
         $user = Auth::user();
 
-        // limit check
-        $active = Borrow::where('user_id', $user->id)
+        // Check borrow limit
+        $currentBorrows = Borrow::where('user_id', $user->id)
             ->whereNull('return_date')
             ->count();
 
-        if ($active >= $this->limit) {
-            return back()->with('error', 'You have reached your borrow limit.');
+        if ($currentBorrows >= 5) {
+            return redirect()->back()->with('error', 'You have reached your borrow limit.');
         }
 
-        // no copies left
         if ($book->copies <= 0) {
-            return back()->with('error', 'Book is not available.');
+            return redirect()->back()->with('error', 'Book not available.');
         }
 
-        // store borrow record
+        // Borrow the book
         Borrow::create([
             'user_id' => $user->id,
             'book_id' => $book->id,
-            'borrow_date' => Carbon::now(),
-            'due_date' => Carbon::now()->addDays(7),
-            'status' => 'Borrowed'
+            'borrow_date' => now(),
+            'due_date' => now()->addDays(7), // 7-day borrow period
         ]);
 
-        // subtract available copy
+        // Reduce book copies
         $book->decrement('copies');
 
-        return back()->with('success', 'Book borrowed successfully!');
+        return redirect()->back()->with('success', 'Book borrowed successfully.');
     }
 
-
-    // RETURN BOOK
+    // Return a book
     public function returnBook(Borrow $borrow)
     {
-        if ($borrow->return_date != null) {
-            return back()->with('error', 'Already returned.');
+        $user = Auth::user();
+
+        // Make sure the borrow belongs to the user
+        if ($borrow->user_id !== $user->id) {
+            abort(403);
         }
 
+        if ($borrow->return_date) {
+            return redirect()->back()->with('error', 'Book already returned.');
+        }
+
+        // Mark as returned
         $borrow->update([
-            'return_date' => Carbon::now(),
-            'status' => 'Returned'
+            'return_date' => now()
         ]);
 
+        // Increase book copies
         $borrow->book->increment('copies');
 
-        return back()->with('success', 'Book returned successfully!');
+        return redirect()->back()->with('success', 'Book returned successfully.');
     }
 }
