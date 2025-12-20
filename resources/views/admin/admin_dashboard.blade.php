@@ -37,11 +37,6 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('admin.borrows.index') }}" class="px-4 py-2 block rounded-xl hover:bg-indigo-100 transition">
-                            📝 Borrow Records
-                        </a>
-                    </li>
-                    <li>
                         <a href="{{ route('profile.edit') }}" class="px-4 py-2 block rounded-xl hover:bg-indigo-100 transition">
                             ⚙️ Profile
                         </a>
@@ -66,6 +61,12 @@
                         <p class="text-gray-600 text-sm">Overdue Books</p>
                         <h3 class="text-3xl font-bold text-pink-600">{{ $overdueBorrows ?? 0 }}</h3>
                     </div>
+                </div>
+
+                <!-- Borrow Chart -->
+                <div class="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">📊 Borrow Stats</h3>
+                    <div id="borrowChart" class="w-full h-96"></div>
                 </div>
 
                 <!-- Books Table -->
@@ -169,4 +170,33 @@
             </div>
         </div>
     </div>
+
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        var options = {
+            chart: {
+                type: 'bar',
+                height: 350
+            },
+            series: [{
+                name: 'Borrows',
+                data: @json($borrowCounts)
+            }],
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    horizontal: false
+                }
+            },
+            dataLabels: { enabled: false },
+            xaxis: {
+                categories: @json($bookTitles)
+            }
+        };
+
+        var chart = new ApexCharts(document.querySelector("#borrowChart"), options);
+        chart.render();
+    </script>
+
 </x-app-layout>

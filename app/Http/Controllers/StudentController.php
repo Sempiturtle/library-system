@@ -11,96 +11,101 @@ class StudentController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth'); // Only logged-in users
+        $this->middleware('auth');
     }
 
-    // Dashboard
+    // DASHBOARD
     public function dashboard()
     {
         $user = Auth::user();
-
-        // Borrow limit (you can change this)
         $borrowLimit = 5;
 
-        // Books currently borrowed by this student
+        // Current borrows
         $currentBorrows = Borrow::where('user_id', $user->id)
             ->whereNull('return_date')
             ->with('book')
             ->get();
 
         $borrowedBooks = $currentBorrows->count();
-
-        // Overdue count
         $overdueCount = $currentBorrows->where('due_date', '<', now())->count();
 
         // Available books
         $books = Book::all();
 
-        // Borrow history (all borrows by this student)
+        // Borrow history
         $history = Borrow::where('user_id', $user->id)
             ->with('book')
             ->orderBy('borrow_date', 'desc')
             ->get();
 
-        return view('dashboard', compact(
+        return view('student.dashboard', compact(
             'books', 'history', 'borrowedBooks', 'borrowLimit', 'overdueCount'
         ));
     }
 
-    // Borrow a book
+    // BORROW BOOK
     public function borrow(Book $book)
     {
         $user = Auth::user();
 
-        // Check borrow limit
-        $currentBorrows = Borrow::where('user_id', $user->id)
+        if ($user->status === 'blocked') {
+            return back()->with('error', 'Your account is blocked due to overdue books.');
+        }
+
+        $activeBorrows = Borrow::where('user_id', $user->id)->whereNull('return_date')->count();
+        if ($activeBorrows >= 5) {
+            return back()->with('error', 'You reached your borrow limit.');
+        }
+
+        if ($book->copies < 1) {
+            return back()->with('error', 'No copies available.');
+        }
+
+        // Prevent double borrow of same book
+        $existing = Borrow::where('user_id', $user->id)
+            ->where('book_id', $book->id)
             ->whereNull('return_date')
-            ->count();
+            ->exists();
 
-        if ($currentBorrows >= 5) {
-            return redirect()->back()->with('error', 'You have reached your borrow limit.');
+        if ($existing) {
+            return back()->with('error', 'You already borrowed this book.');
         }
 
-        if ($book->copies <= 0) {
-            return redirect()->back()->with('error', 'Book not available.');
-        }
-
-        // Borrow the book
         Borrow::create([
             'user_id' => $user->id,
             'book_id' => $book->id,
             'borrow_date' => now(),
-            'due_date' => now()->addDays(7), // 7-day borrow period
+            'due_date' => now()->addDays(7),
         ]);
 
-        // Reduce book copies
         $book->decrement('copies');
 
-        return redirect()->back()->with('success', 'Book borrowed successfully.');
+        return back()->with('success', 'Book borrowed successfully!');
     }
 
-    // Return a book
+    // RETURN BOOK
     public function returnBook(Borrow $borrow)
     {
-        $user = Auth::user();
-
-        // Make sure the borrow belongs to the user
-        if ($borrow->user_id !== $user->id) {
-            abort(403);
-        }
-
-        if ($borrow->return_date) {
-            return redirect()->back()->with('error', 'Book already returned.');
-        }
-
-        // Mark as returned
         $borrow->update([
-            'return_date' => now()
+            'return_date' => now(),
+            'penalty_fee' => $borrow->due_date < now()
+                ? now()->diffInDays($borrow->due_date) * 10
+                : 0
         ]);
 
-        // Increase book copies
         $borrow->book->increment('copies');
 
-        return redirect()->back()->with('success', 'Book returned successfully.');
+        // Unblock user if no overdue left
+        $user = $borrow->user;
+        $hasOverdue = Borrow::where('user_id', $user->id)
+            ->whereNull('return_date')
+            ->where('due_date', '<', now())
+            ->exists();
+
+        if (!$hasOverdue) {
+            $user->update(['status' => 'active']);
+        }
+
+        return back()->with('success', 'Book returned successfully!');
     }
 }

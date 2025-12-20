@@ -15,10 +15,10 @@
             <div class="hidden sm:flex sm:items-center sm:space-x-6">
                 @php
                     $dashboardRoute =
-                        Auth::user()->usertype === 'admin' ? route('admin.dashboard') : route('dashboard'); // student dashboard
+                        Auth::user()->usertype === 'admin' ? route('admin.dashboard') : route('student.dashboard'); // student dashboard
                 @endphp
 
-                <x-nav-link :href="$dashboardRoute" :active="request()->routeIs('dashboard') || request()->routeIs('admin.dashboard')"
+                <x-nav-link :href="$dashboardRoute" :active="request()->routeIs('student.dashboard') || request()->routeIs('admin.dashboard')"
                     class="relative px-3 py-2 rounded-md text-gray-700 hover:text-white hover:bg-indigo-500 transition-colors duration-200 font-medium">
                     Dashboard
                     @if (request()->routeIs('dashboard') || request()->routeIs('admin.dashboard'))
@@ -76,7 +76,7 @@
     <div :class="{ 'block': open, 'hidden': !open }"
         class="hidden sm:hidden bg-white/80 backdrop-blur-xl border-t border-gray-200">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="px-4 py-2 font-medium">
+            <x-responsive-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')" class="px-4 py-2 font-medium">
                 Dashboard
             </x-responsive-nav-link>
         </div>

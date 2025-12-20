@@ -14,7 +14,7 @@
         </h1>
         <div class="space-x-4">
             @auth
-                <a href="{{ route('dashboard') }}"
+                <a href="{{ route('student.dashboard') }}"
                    class="px-5 py-2 rounded-full bg-indigo-500 hover:bg-indigo-600 transition shadow-lg">
                     Dashboard
                 </a>
@@ -35,14 +35,14 @@
     <section class="flex flex-col items-center justify-center text-center px-6 mt-24">
         <div class="max-w-3xl">
             <h2 class="text-5xl font-extrabold leading-tight mb-6">
-                Welcome to the  
+                Welcome to the
                 <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-pink-400">
                     AISAT Library
                 </span>
             </h2>
 
             <p class="text-lg text-slate-300 mb-10">
-                A modern, smart, and efficient way to manage books, borrowing, and learning —  
+                A modern, smart, and efficient way to manage books, borrowing, and learning —
                 built for students and librarians of Aisat College Dasmariñas.
             </p>
 
@@ -95,7 +95,7 @@
     <!-- Footer -->
     <footer class="mt-32 py-10 text-center text-slate-400">
         <p>
-            © {{ date('Y') }} AISAT Library Management System  
+            © {{ date('Y') }} AISAT Library Management System
         </p>
     </footer>
 

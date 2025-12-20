@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Testing\Fluent\Concerns\Has;
+use Illuminate\Database\Eloquent\Model;
 
 class Borrow extends Model
 {
@@ -16,13 +15,15 @@ class Borrow extends Model
         'borrow_date',
         'due_date',
         'return_date',
-        'status'
+        'penalty_fee',
     ];
 
+    // 🔥 FIX: Add these relationships
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     public function book()
     {
         return $this->belongsTo(Book::class);
